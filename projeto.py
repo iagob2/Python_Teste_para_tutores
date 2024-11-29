@@ -1,156 +1,169 @@
 import pgzrun
 import random
-from pygame import Rect
+from pgzero.rect import Rect
 
-# Configurações
-screen_width = 800
-screen_height = 600
-music_enabled = True
-
-# Dimensões da tela
+# Configurations
 WIDTH = 800
 HEIGHT = 600
+music_enabled = True
 
-# Dimensões do herói e dos inimigos
-LARGURA_HEROI = 32
-ALTURA_HEROI = 32
-LARGURA_INIMIGO = 32
-ALTURA_INIMIGO = 32
+# Hero settings
+HERO_WIDTH = 64
+HERO_HEIGHT = 64
+hero_pos = [100, 500]
+hero_speed = 5
+NUM_HERO_FRAMES = 11
+time_between_hero_frames = 0.1
+current_hero_frame = 0
+hero_elapsed_time = 0
+hero_sprite = Actor('hero')
 
-# Posição inicial do herói
-heroi_pos = [100, 500]
-heroi_velocidade = 5
+# Enemy settings
+NUM_ENEMIES = 5
+ENEMY_FRAME_WIDTH = 64
+ENEMY_FRAME_HEIGHT = 64
+NUM_ENEMY_FRAMES = 8
+time_between_enemy_frames = 0.15
+current_enemy_frame = 0
+enemy_elapsed_time = 0
+enemy_sprite = Actor('enemy')
+enemies = [{"pos": [random.randint(300, WIDTH - 50), random.randint(100, HEIGHT - 100)]} for _ in range(NUM_ENEMIES)]
 
-# Lista de inimigos
-inimigos = [{"pos": [random.randint(300, WIDTH - 50), random.randint(100, HEIGHT - 100)]} for _ in range(5)]
-
-# Estados do jogo
+# Game states
 game_started = False
 game_over = False
 menu = True
-musica_ligada = True  # Definindo o estado da música
+music_enabled = True
 
-# Botões do menu
-button_start = Rect((screen_width // 2 - 100, screen_height // 2 - 100), (200, 50))
-button_music = Rect((screen_width // 2 - 100, screen_height // 2), (200, 50))
-button_exit = Rect((screen_width // 2 - 100, screen_height // 2 + 100), (200, 50))
+# Play music function
+def play_music():
+    if music_enabled:
+        music.play("jango")
+        music.set_volume(0.5)
 
-# Função para desenhar na tela
-def draw():
-    global game_started, game_over, musica_ligada, menu
-
-    screen.fill((0, 0, 0))  # Preenche a tela com fundo preto
-    
-    if menu:
-        desenhar_menu()  # Desenha o menu
-    elif game_started and not game_over:
-        # Desenha o Jogo
-        screen.draw.text("Jogo Iniciado!", center=(screen_width // 2, screen_height // 8), fontsize=40, color="white")
-        # Desenha o herói
-        screen.draw.filled_rect(Rect(heroi_pos[0], heroi_pos[1], LARGURA_HEROI, ALTURA_HEROI), "blue")
-        # Desenha os inimigos
-        for inimigo in inimigos:
-            screen.draw.filled_rect(Rect(inimigo["pos"][0], inimigo["pos"][1], LARGURA_INIMIGO, ALTURA_INIMIGO), "red")
-    if game_over:
-        # Tela de Game Over
-        screen.draw.text("GAME OVER", center=(WIDTH // 2, HEIGHT // 2), fontsize=60, color="red")
-        screen.draw.text("Pressione ENTER para reiniciar", center=(WIDTH // 2, HEIGHT // 2 + 60), fontsize=30, color="white")
-
-def desenhar_menu():
-    screen.draw.text("MENU PRINCIPAL", center=(WIDTH // 2, 100), fontsize=50, color="white")
-
-    # Botão "Começar o Jogo"
+# Main menu function
+def draw_menu():
+    screen.draw.text("MAIN MENU", center=(WIDTH // 2, 100), fontsize=50, color="white")
     screen.draw.filled_rect(Rect(WIDTH // 2 - 100, 200, 200, 50), "green")
-    screen.draw.text("Começar o Jogo", center=(WIDTH // 2, 225), fontsize=30, color="white")
-
-    # Botão "Música e Sons"
+    screen.draw.text("Start Game", center=(WIDTH // 2, 225), fontsize=30, color="white")
     screen.draw.filled_rect(Rect(WIDTH // 2 - 100, 300, 200, 50), "blue")
-    musica_estado = "Ligados" if musica_ligada else "Desligados"
-    screen.draw.text(f"Música: {musica_estado}", center=(WIDTH // 2, 325), fontsize=30, color="white")
-
-    # Botão "Saída"
+    screen.draw.text("Music: On" if music_enabled else "Music: Off", center=(WIDTH // 2, 325), fontsize=30, color="white")
     screen.draw.filled_rect(Rect(WIDTH // 2 - 100, 400, 200, 50), "red")
-    screen.draw.text("Saída", center=(WIDTH // 2, 425), fontsize=30, color="white")
+    screen.draw.text("Exit", center=(WIDTH // 2, 425), fontsize=30, color="white")
 
-def verificar_clique_menu(pos):
-    global menu, musica_ligada, game_started
+# Check button clicks in the menu
+def check_menu_click(pos):
+    global menu, music_enabled, game_started
+    if Rect(WIDTH // 2 - 100, 200, 200, 50).collidepoint(pos):  # "Start Game" button
+        menu = False
+        game_started = True
+        play_music()
+    elif Rect(WIDTH // 2 - 100, 300, 200, 50).collidepoint(pos):  # "Music" button
+        music_enabled = not music_enabled
+        if music_enabled:
+            play_music()
+        else:
+            music.stop()
+    elif Rect(WIDTH // 2 - 100, 400, 200, 50).collidepoint(pos):  # "Exit" button
+        exit()
 
-    if mouse.LEFT:
-        if Rect(WIDTH // 2 - 100, 200, 200, 50).collidepoint(pos):  # Botão "Começar o Jogo"
-            menu = False
-            game_started = True  # Começar o jogo
-            if musica_ligada:
-                music.play("fauxdoor")  # Reproduz música de fundo
-                music.set_volume(0.5)  # Ajusta o volume da música
-        elif Rect(WIDTH // 2 - 100, 300, 200, 50).collidepoint(pos):  # Botão "Música e Sons"
-            musica_ligada = not musica_ligada
-            if musica_ligada:
-                music.play("fauxdoor")  # Reproduz música de fundo
-                music.set_volume(0.5)  # Ajusta o volume da música
-            else:
-                music.stop()  # Para a música
-        elif Rect(WIDTH // 2 - 100, 400, 200, 50).collidepoint(pos):  # Botão "Saída"
-            exit()
+# Mouse click event
+def on_mouse_down(pos):
+    if menu:
+        check_menu_click(pos)
 
-# Função para atualizar o jogo
-def update():
-    global game_started, game_over
+# Animate hero
+def animate_hero(dt):
+    global current_hero_frame, hero_elapsed_time
+    hero_elapsed_time += dt
+    if hero_elapsed_time >= time_between_hero_frames:
+        current_hero_frame = (current_hero_frame + 1) % NUM_HERO_FRAMES
+        hero_elapsed_time = 0
 
-    if not game_started:
-        return  # Não faz nada se o jogo não começou
+# Animate enemies
+def animate_enemies(dt):
+    global current_enemy_frame, enemy_elapsed_time
+    enemy_elapsed_time += dt
+    if enemy_elapsed_time >= time_between_enemy_frames:
+        current_enemy_frame = (current_enemy_frame + 1) % NUM_ENEMY_FRAMES
+        enemy_elapsed_time = 0
 
-    if not game_over:
-        mover_heroi()
-        mover_inimigos()
-        verificar_colisoes()
-    else:
-        if keyboard.RETURN:
-            reiniciar_jogo()
-
-# Movimento do herói
-def mover_heroi():
+# Move hero
+def move_hero():
     if keyboard.left:
-        heroi_pos[0] = max(0, heroi_pos[0] - heroi_velocidade)
+        hero_pos[0] = max(0, hero_pos[0] - hero_speed)
     if keyboard.right:
-        heroi_pos[0] = min(WIDTH - LARGURA_HEROI, heroi_pos[0] + heroi_velocidade)
+        hero_pos[0] = min(WIDTH - HERO_WIDTH, hero_pos[0] + hero_speed)
     if keyboard.up:
-        heroi_pos[1] = max(0, heroi_pos[1] - heroi_velocidade)
+        hero_pos[1] = max(0, hero_pos[1] - hero_speed)
     if keyboard.down:
-        heroi_pos[1] = min(HEIGHT - ALTURA_HEROI, heroi_pos[1] + heroi_velocidade)
+        hero_pos[1] = min(HEIGHT - HERO_HEIGHT, hero_pos[1] + hero_speed)
 
-# Movimento dos inimigos
-def mover_inimigos():
-    for inimigo in inimigos:
-        inimigo["pos"][0] += random.choice([-1, 1]) * 3
-        inimigo["pos"][1] += random.choice([-1, 1]) * 3
+# Move enemies
+def move_enemies():
+    for enemy in enemies:
+        enemy["pos"][0] += random.choice([-1, 1]) * 3
+        enemy["pos"][1] += random.choice([-1, 1]) * 3
+        enemy["pos"][0] = max(0, min(WIDTH - ENEMY_FRAME_WIDTH, enemy["pos"][0]))
+        enemy["pos"][1] = max(0, min(HEIGHT - ENEMY_FRAME_HEIGHT, enemy["pos"][1]))
 
-        # Impedir que os inimigos saiam da tela
-        inimigo["pos"][0] = max(0, min(WIDTH - LARGURA_INIMIGO, inimigo["pos"][0]))
-        inimigo["pos"][1] = max(0, min(HEIGHT - ALTURA_INIMIGO, inimigo["pos"][1]))
-
-# Verificar colisões
-def verificar_colisoes():
+# Check for collisions
+def check_collisions():
     global game_over
-
-    heroi_rect = Rect(heroi_pos[0], heroi_pos[1], LARGURA_HEROI, ALTURA_HEROI)
-    for inimigo in inimigos:
-        inimigo_rect = Rect(inimigo["pos"][0], inimigo["pos"][1], LARGURA_INIMIGO, ALTURA_INIMIGO)
-        if heroi_rect.colliderect(inimigo_rect):
+    hero_rect = Rect(hero_pos[0], hero_pos[1], HERO_WIDTH, HERO_HEIGHT)
+    for enemy in enemies:
+        enemy_rect = Rect(enemy["pos"][0], enemy["pos"][1], ENEMY_FRAME_WIDTH, ENEMY_FRAME_HEIGHT)
+        if hero_rect.colliderect(enemy_rect):
             game_over = True
+            if music_enabled:
+                music.play("death")
 
-# Reiniciar o jogo
-def reiniciar_jogo():
-    global heroi_pos, inimigos, game_over, game_started, menu
-
-    heroi_pos = [100, 500]
-    inimigos = [{"pos": [random.randint(300, WIDTH - 50), random.randint(100, HEIGHT - 100)]} for _ in range(5)]
+# Restart game
+def restart_game():
+    global hero_pos, enemies, game_over, game_started, menu
+    hero_pos = [100, 500]
+    enemies = [{"pos": [random.randint(300, WIDTH - 50), random.randint(100, HEIGHT - 100)]} for _ in range(NUM_ENEMIES)]
     game_over = False
     game_started = False
-    menu = True  # Retorna ao menu principal
+    menu = True
 
-# Função para verificar os cliques nos botões
-def on_mouse_down(pos):
-    verificar_clique_menu(pos)
+# Update game
+def update(dt):
+    if menu or not game_started:
+        return
+    if game_over:
+        if keyboard.RETURN:
+            restart_game()
+    else:
+        animate_hero(dt)
+        animate_enemies(dt)
+        move_hero()
+        move_enemies()
+        check_collisions()
 
-# Inicia o jogo
+# Draw to the screen
+def draw():
+    screen.fill((0, 0, 0))  # Clears the screen with black background
+    
+    if menu:
+        draw_menu()  # Draw the menu
+    
+    elif game_started and not game_over:
+        # Hero animation
+        hero_frame_x = (current_hero_frame % NUM_HERO_FRAMES) * HERO_WIDTH
+        hero_sprite.clip = Rect(hero_frame_x, 0, HERO_WIDTH, HERO_HEIGHT)  # Define sprite clipping
+        hero_sprite.pos = hero_pos  # Update hero position
+        hero_sprite.draw()  # Draw the animated hero
+        
+        # Enemies animation
+        for enemy in enemies:
+            enemy_frame_x = (current_enemy_frame % NUM_ENEMY_FRAMES) * ENEMY_FRAME_WIDTH
+            enemy_sprite.clip = Rect(enemy_frame_x, 0, ENEMY_FRAME_WIDTH, ENEMY_FRAME_HEIGHT)
+            enemy_sprite.pos = enemy["pos"]
+            enemy_sprite.draw()  # Draw the animated enemy
+    
+    if game_over:
+        screen.draw.text("GAME OVER", center=(WIDTH // 2, HEIGHT // 2), fontsize=50, color="red")
+        screen.draw.text("Press ENTER to Restart", center=(WIDTH // 2, HEIGHT // 2 + 50), fontsize=30, color="white")
+
 pgzrun.go()
